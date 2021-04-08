@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>eShop on VueJS</title>
+    <style>
+        .card {
+            text-align: center;
+            width: 200px;
+            height: 150px;
+            padding: 10px;
+            margin: 10px;
+            background-color: rgb(224, 222, 222);
+        }
+
+        .cart {
+            padding: 20px;
+            position: fixed;
+            right: 0;
+            top: 50px;
+            background: rgb(241, 241, 241);
+            width: 500px;
+
+        }
+
+        .closeCart {
+            position: fixed;
+            top: 55px;
+            right: 5px;
+        }
+
+        .catalog {
+            margin-top: 20px;
+            margin-left: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <header>
+
+        </header>
+        <main>
+            <button type="button">Показать каталог</button>
+            <button type="button">Корзина</button>
+            <search @searched-text="searchText = $event"></search>
+            <div class="catalog">
+
+                <div v-for="product in filteredProducts" :key="product.id_product" class="card">
+                    <p>{{ product.product_name }}</p>
+                    <p>{{ product.price }}</p>
+
+                    <button @click="addToCart(product)">добавить в корзину</button>
+                </div>
+            </div>
+
+            <basket :added-products="basketProducts"></basket>
+        </main>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
+    <script>
+        const basket = {
+            props: {
+                addedProducts: {
+                    type: Array,
+                    required: true
+                }
+            },
+            data: () => ({}),
+            computed: {
+                accamulateProducts() {
+                    return this.addedProducts.reduce((result, currentProduct) => {
+                        (result[currentProduct["id_product"]] =
+                            result[currentProduct["id_product"]] || []).push(currentProduct);
+                        return result;
+                    }, {});
+                }
+            },
+            template: `
+        <div class="cart"> КОРЗИНА:
+      <div v-for="good in accamulateProducts" :key="good.id_product">
+        <div class="cart_item">{{ good[0].product_name }} {{ good.length }}</div>
+      </div>
+      <button class="closeCart">x</button>
+    </div>
+  `
+        };
+        const search = {
+            data: () => ({}),
+            template: `
+  <input @input="$emit('searched-text', $event.target.value)" placeholder="введите название товара.." />
+  `
+        };
+        const app = new Vue({
+            el: "#app",
+            API_URL:
+                "https://raw.githubusercontent.com/GeekBrainsTutorial/online-store-api/master/responses/",
+            components: {
+                basket,
+                search
+            },
+            data() {
+                return {
+                    allProducts: [],
+                    basketProducts: [],
+                    searchText: ""
+                };
+            },
+            methods: {
+                hendlerSearchText(value) {
+                    console.log(value);
+                },
+                addToCart(product) {
+                    this.basketProducts.push({ ...product });
+                }
+            },
+            computed: {
+                filteredProducts() {
+                    return this.allProducts.filter((product) =>
+                        product.product_name
+                            .toLowerCase()
+                            .includes(this.searchText.toLowerCase())
+                    );
+                }
+            },
+            created() {
+                fetch(`${this.$options.API_URL}/catalogData.json`)
+                    .then((response) => {
+                        return response.json();
+                    })
+                    .then((data) => {
+                        this.allProducts = data;
+                    });
+            }
+        });
+
+    </script>
+</body>
+
+</html>
